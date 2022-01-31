@@ -1,0 +1,5 @@
+google
+pandas
+requests
+colorama
+beautifulsoup4
