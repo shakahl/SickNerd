@@ -6,8 +6,8 @@ import time
 import urllib.error
 from datetime import datetime
 from random import randint
-from random import uniform
 from random import shuffle
+from random import uniform
 
 import googlesearch as gsearch
 import pandas as pd
@@ -123,11 +123,21 @@ class SickNerd:
         # check if it exists in cwd and then read in else make empty
         if os.path.exists(os.path.join(args.output, 'sicknerd-output.csv')):
             self.output_df = pd.read_csv(os.path.join(args.output, 'sicknerd-output.csv'))
-            self.output_df.drop(columns=['HTTP CODE', 'TITLE', 'CONTENT LENGTH'], inplace=True)
+            try:
+                self.output_df.drop(columns=['HTTP CODE', 'TITLE', 'CONTENT LENGTH'], inplace=True)
+            except KeyError:
+                pass
             message(f'Loaded output file with {message(len(self.output_df), word=True)} records', stat=True)
         else:
             self.output_df = pd.DataFrame(columns=['QUERY', 'URL'])
-        
+
+        # check if it exists in cwd and then read in else make empty
+        if os.path.exists(os.path.join(args.output, 'sicknerd-attempts.csv')):
+            self.attempt_df = pd.read_csv(os.path.join(args.output, 'sicknerd-attempts.csv'))
+            message(f'Loaded attempt file with {message(len(self.attempt_df), word=True)} records', stat=True)
+        else:
+            self.attempt_df = pd.DataFrame(columns=['QUERY'])
+
         self.validate_bool = passive
         if len(dorks_lst) > 0:
             self.dorks_lst = dorks_lst
@@ -160,7 +170,9 @@ class SickNerd:
                 tld_str = self.df.HOSTNAME.str.split('.').iloc[0][1]
                 site_str = f'site:{str(h)} '
                 # checks if it has been queried already
-                if self.output_df.loc[self.output_df['QUERY'].str.fullmatch(site_str + str(d), case=False)].shape[0] == 0:
+                if self.output_df.loc[self.output_df['QUERY'].str.fullmatch(site_str + str(d), case=False)].shape[
+                    0] == 0 and self.attempt_df.loc[
+                    self.attempt_df['QUERY'].str.fullmatch(site_str + str(d), case=False)].shape[0] == 0:
                     try:
                         self.search(site_str + str(d), tld_str)
                     except urllib.error.URLError as e:
@@ -186,9 +198,11 @@ class SickNerd:
         :return: none
         """
         self.output_df.to_csv('sicknerd-output.csv', index=False)
+        self.attempt_df.to_csv('sicknerd-attempts.csv', index=False)
         if final:
             message(f'Writing {message(str(self.output_df.shape[0]), word=True)} results to file', stat=True)
             self.output_df.to_csv(os.path.join(args.output, 'sicknerd-output.csv'), index=False)
+            self.attempt_df.to_csv('sicknerd-attempts.csv', index=False)
 
     def search(self, search_str, tld_str, sleep_int=120):
         """
@@ -203,16 +217,20 @@ class SickNerd:
         wait_flux = uniform(5, 30)
         count = 0
         try:
-            for i in gsearch.search(str(search_str), tld=str(tld_str), num=10, stop=int(args.max), pause=wait_int + wait_flux,
+            for i in gsearch.search(str(search_str), tld=str(tld_str), num=10, stop=int(args.max),
+                                    pause=wait_int + wait_flux,
                                     user_agent=ua_str):
                 self.output_df.loc[self.output_df.shape[0]] = [search_str, str(i)]
                 count += 1
             message(f'Found {message(str(count), word=True)} results from {message(search_str, word=True)}', stat=True)
-        except urllib.error.HTTPError as e:                                              
-            message(f'Got {message(str(e), word=True)} while searching {message(str(search_str), word=True)}', stat=True)
-            message(f'Sleeping for atleast {message(str(int(sleep_int/60)), word=True)} minutes', stat=True) 
-            time.sleep(randint(sleep_int, sleep_int+240) + wait_flux)
-            self.search(search_str, tld_str, sleep_int*2)
+            if count <= 0:
+                self.attempt_df.loc[self.attempt_df.shape[0]] = [search_str]
+        except urllib.error.HTTPError as e:
+            message(f'Got {message(str(e), word=True)} while searching {message(str(search_str), word=True)}',
+                    stat=True)
+            message(f'Sleeping for atleast {message(str(int(sleep_int / 60)), word=True)} minutes', stat=True)
+            time.sleep(randint(sleep_int, sleep_int + 240) + wait_flux)
+            self.search(search_str, tld_str, sleep_int * 2)
 
     def validate(self, url):
         """

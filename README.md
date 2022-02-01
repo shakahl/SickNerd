@@ -8,7 +8,7 @@ user-agent, retries 429 and failed requests recursively, and prints output after
 done after to grab metadata. 
 
 **SickNerd** comes with a default list of dorks aimed at finding sensitive files but 
-accepts input files and can fetch dorks from GHDB. Dorks taken from GHDB can be filtered down by tags and year of creation. Multiple domains can be dorked at once and dorks are run at random. Results are stored in a CSV file and can be loaded to aggregate runs.
+accepts input files and can fetch dorks from GHDB. Dorks taken from GHDB can be filtered down by tags and year of creation. Multiple domains can be dorked at once and dorks are run at random. Results and attempted searches are stored in a CSV file and can be loaded to aggregate runs together without duplicating searches.
 
 ## Getting Started
 
@@ -80,6 +80,7 @@ sicknerd.py -i domains.txt -d dorks.txt -p -o ./dork-out/
 ▐█▄▪▐█▐█▌▐███▌▐█.█▌██▐█▌▐█▄▄▌▐█•█▌██. ██ 
  ▀▀▀▀ ▀▀▀·▀▀▀ ·▀  ▀▀▀ █▪ ▀▀▀ .▀  ▀▀▀▀▀▀• 
 Loaded output file with 30 records
+Loaded attempt file with 3 records
 Loaded 3 dorks...
 [*] Starting searches...
 Max 30 results per query
@@ -111,6 +112,7 @@ sicknerd.py -i urls.txt -f vulns -y 2 -m 20
 Requesting data from https://www.exploit-db.com/google-hacking-database...
 Searching for vulns dorks from the past 2 years...
 Loaded output file with 30 records
+Loaded attempt file with 3 records
 Loaded 214 dorks...
 [*] Starting searches...
 Max 20 results per query
