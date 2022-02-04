@@ -2,8 +2,7 @@
 SickNerd
  </h1>
 
-CLI tool for making Google Dorking a passive recon experience. **SickNerd** aims to slowly enumerate Google Dorks via
-the `googlesearch` API then requests found pages for metadata. By default it sleeps between queries, randomizes
+CLI tool for Google Dorking with the ability to fetch and filter dorks from GHDB, save and load results, and search multiple domains. **SickNerd** aims to slowly enumerate Google Dorks via the `googlesearch` API then requests found pages for metadata. By default it sleeps between queries, randomizes
 user-agent, retries 429 and failed requests recursively, and prints output after each query. Validation requests can be
 done after to grab metadata. 
 
