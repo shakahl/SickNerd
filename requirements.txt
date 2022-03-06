@@ -1,5 +1,5 @@
 google
-pandas
-requests
-colorama
-beautifulsoup4
+pandas>=1.4.1
+requests>=2.27.1
+colorama>=0.4.4
+beautifulsoup4>=4.10.0
