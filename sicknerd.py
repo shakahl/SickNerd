@@ -121,6 +121,7 @@ class SickNerd:
     def __init__(self, hosts_df, dorks_lst, passive=False):
         self.df = hosts_df
         self.df.drop_duplicates(subset=['HOSTNAME'], inplace=True)
+        self.int429 = 0
 
         # check if it exists in cwd and then read in else make empty
         if os.path.exists(os.path.join(args.output, 'sicknerd-output.csv')):
@@ -154,9 +155,8 @@ class SickNerd:
                               'filetype:sql.tgz', 'filetype:sql.zip',
                               'filetype:sqlite', 'filetype:tar', 'filetype:tar.bz2', 'filetype:tar.bzip2',
                               'filetype:tar.gz', 'filetype:tar.gzip', 'filetype:tgz', 'filetype:zip', 'filetype:bat',
-                              'filetype:key', 'filetype:env', 'filetype:log', 'filetype:reg', 'filetype:ini',
-                              'filetype:yaml', 'filetype:swagger', 'filetype:mail', 'filetype:eml', 'filetype:mbox',
-                              'filetype:mbx', 'filetype:csr', 'filetype:config']
+                              'filetype:key', 'filetype:env', 'filetype:log', 'filetype:ini',
+                              'filetype:yaml', 'filetype:swagger', 'filetype:mail', 'filetype:config']
         message(f'Loaded {message(str(len(self.dorks_lst)), word=True)} dorks...', stat=True)
 
     def start_query(self):
@@ -219,7 +219,7 @@ class SickNerd:
         wait_flux = uniform(5, 30)
         count = 0
         try:
-            for i in gsearch.search(str(search_str), tld=str(tld_str), num=10, stop=int(args.max),
+            for i in gsearch.search(str(search_str), tld=str(tld_str), num=30, stop=int(args.max),
                                     pause=wait_int + wait_flux,
                                     user_agent=ua_str):
                 self.output_df.loc[self.output_df.shape[0]] = [search_str, str(i)]
@@ -242,14 +242,18 @@ class SickNerd:
         """
         ua_str = gsearch.get_random_user_agent().decode("utf-8")
         try:
-            resp = requests.get(str(url), headers={'User-Agent': str(ua_str)})
-        except requests.exceptions.ConnectionError:
+            resp = requests.get(str(url), headers={'User-Agent': str(ua_str)}, timeout=10)
+        except requests.exceptions.RequestException:
             return ['ERROR', 'ERROR', 'ERROR']
 
         if resp.status_code == 429:
             message('Got 429 while validating! Sleeping!', title=True)
             time.sleep(randint(60, 90))
-            return self.validate(url)
+            self.int429 += 1
+            if self.int429 < 3:
+                return self.validate(url)
+            else:
+                return ['ERROR', 'ERROR', 'ERROR']
         else:
             try:
                 title = re.search('<\W*title\W*(.*)</title', resp.text, re.IGNORECASE).group(1)
@@ -300,7 +304,7 @@ if __name__ == '__main__':
         if not args.quiet:
             message('', banner=True)
         if args.input:
-            df = pd.read_table(args.input, header=None, names=['HOSTNAME'], on_bad_lines='skip')
+            df = pd.read_table(args.input, header=None, names=['HOSTNAME'])
             df['HOSTNAME'] = df['HOSTNAME'].astype(str)
     except FileNotFoundError:
         print('No input file found')
